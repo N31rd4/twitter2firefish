@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  app:
+    container_name: twitter2firefish
+    build: .
+    restart: unless-stopped
+    volumes:
+      - ./posted.json:/usr/src/app/posted.json
+      - ./cookies.json:/usr/src/app/cookies.json
