@@ -76,7 +76,7 @@ function extractUserId(url : string) {
 }
 
 (async () => {
-  const browser = await launch({ headless: "new" });
+  const browser = await launch({ headless: "new", args: ['--no-sandbox']});
   const page = await browser.newPage();
   await page.setUserAgent("Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0")
 
