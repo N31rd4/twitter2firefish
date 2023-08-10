@@ -120,7 +120,7 @@ function extractUserId(url : string) {
 		for(let tweet of todelete) {
 			deleteNote(tweet, database[userId].apiKey, userId);
 		}
-		fs.writeFileSync("./posted.json", JSON.stringify(database,null,2))
+		fs.writeFileSync("./data.json", JSON.stringify(database,null,2))
 	}
 });
 while(1){
