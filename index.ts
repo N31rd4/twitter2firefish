@@ -111,7 +111,8 @@ function extractUserId(url : string) {
 		let tweets = instructions[instructions.length - 1].entries;
 		let todo = parsetweets(tweets);
 		console.log(`${todo.length} tweets retrieved`)
-		let todelete = databasePosts.filter(x => todo.find((y) => x.id == y.id) == undefined);
+		let lastTweetId = todo[todo.length - 1].id;
+		let todelete = databasePosts.filter(x => (+x.id >= +lastTweetId && todo.find((y) => (x.id == y.id) == undefined)));
 		let toadd = todo.filter(x => databasePosts.find((y) => x.id == y.id) == undefined);
 		databasePosts = databasePosts.filter(x => todelete.find((y) => x.id == y.id) == undefined);
 		for(let tweet of toadd) {
@@ -126,5 +127,4 @@ function extractUserId(url : string) {
 while(1){
 	await getTweets();
 }
-//   await browser.close();
 })();
