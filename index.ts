@@ -102,7 +102,6 @@ function extractUserId(url : string) {
   page.on('response', async response => {
 	if (response.url().includes('https://twitter.com/i/api/graphql/XicnWRbyQ3WgVY__VataBQ/UserTweets')) {
 		let userId = extractUserId(response.url()) as string;
-		fs.writeFileSync("./test.json", JSON.stringify(await response.json(),null,2))
 		console.log(`User ID: ${userId}`);
 		let databasePosts = database[userId].posts;
 		if (userId == null) return;
