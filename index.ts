@@ -110,6 +110,7 @@ function extractUserId(url : string) {
 		let tweets = instructions[instructions.length - 1].entries;
 		let todo = parsetweets(tweets);
 		console.log(`${todo.length} tweets retrieved`)
+		if(todo.length == 0) return;
 		let lastTweetId = todo[todo.length - 1].id;
 		let todelete = databasePosts.filter(x => (+x.id >= +lastTweetId && todo.find((y) => (x.id == y.id) == undefined)));
 		let toadd = todo.filter(x => databasePosts.find((y) => x.id == y.id) == undefined);
