@@ -95,13 +95,25 @@ function extractUserId(url : string) {
 			cookies = [cookies.find(x => x.name == 'auth_token')!, cookies.find(x => x.name == 'ct0')!]
 			fs.writeFileSync('./cookies.json', JSON.stringify(cookies, null, 2));
 		})
-		await new Promise(r => setTimeout(r, 1000 * (timeFuzz() + 5)));
+		await new Promise(r => setTimeout(r, 1000 * (timeFuzz() + 15)));
 	}
-
+	// rate limit seems to be on graphql operations even if it looks like an api call limit
+	await page.setRequestInterception(true);
+	page.on('request', request => {
+	  if (request.isInterceptResolutionHandled()) return;
+	  const url = request.url();
+	  if (url.includes('https://twitter.com/i/api/graphql/XicnWRbyQ3WgVY__VataBQ/UserTweets')){
+    	let decodedUrl = decodeURIComponent(url);
+		decodedUrl = decodedUrl.replace(/("count"\s*:\s*)\d+/, `$1${10}`);
+		request.continue({ url: encodeURI(decodedUrl)});
+	  }
+	  else request.continue();
+	});
 
   page.on('response', async response => {
 	if (response.url().includes('https://twitter.com/i/api/graphql/XicnWRbyQ3WgVY__VataBQ/UserTweets')) {
 		let userId = extractUserId(response.url()) as string;
+		// fs.writeFileSync("./test.json", await response.text());
 		console.log(`User ID: ${userId}`);
 		let databasePosts = database[userId].posts;
 		if (userId == null) return;
@@ -110,11 +122,14 @@ function extractUserId(url : string) {
 		let tweets = instructions[instructions.length - 1].entries;
 		let todo = parsetweets(tweets);
 		console.log(`${todo.length} tweets retrieved`)
-		if(todo.length == 0) return;
-		let lastTweetId = todo[todo.length - 1].id;
-		let todelete = databasePosts.filter(x => (+x.id >= +lastTweetId && todo.find((y) => (x.id == y.id) == undefined)));
+		if(todo.length != 0) {
+			let lastTweetId = todo[todo.length - 1].id;
+			//remove untracked tweets
+			database[userId].posts = databasePosts.filter(x => x.id >= lastTweetId);
+		};
+		let todelete = databasePosts.filter(x => todo.find((y) => (x.id == y.id) == undefined));
 		let toadd = todo.filter(x => databasePosts.find((y) => x.id == y.id) == undefined);
-		databasePosts = databasePosts.filter(x => todelete.find((y) => x.id == y.id) == undefined);
+		database[userId].posts = databasePosts.filter(x => todelete.find((y) => x.id == y.id) == undefined);
 		for(let tweet of toadd) {
 			postNote(tweet, database[userId].apiKey, userId);
 		}
