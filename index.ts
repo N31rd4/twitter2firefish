@@ -77,7 +77,10 @@ function parsetweets(tweets: any) {
 		console.log(legacy.full_text);
 		let medias : string[] = [];
 		for(let media of legacy.extended_entities.media) {
-			medias.push(media.media_url_https);
+			if (media.type == 'photo')
+				medias.push(media.media_url_https);
+			else if (media.type == 'video') 
+				medias.push(media.video_info.variants[0].url.split('?')[0]);
 		}
 		let res = {
 			text : legacy.full_text.replace(/https:\/\/t.co\/\w+/, ''),
