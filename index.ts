@@ -1,10 +1,12 @@
 import { launch } from 'puppeteer';
-import axios from 'axios';
+import axios, { Axios, AxiosResponse } from 'axios';
 import fs from 'fs';
-const apiPath = "https://tuit.fr"
+import FormData from 'form-data';
+const apiPath = "https://tuit.fr/api/"
 interface Post {
 	text: string,
 	id: string,
+	medias: string[],
 	noteId?: string
 }
 interface User {
@@ -24,15 +26,29 @@ function timeFuzz() {
     return Math.round(num * 100) / 100;  // Round to 2 decimal places
 }
 
-function postNote(tweet: Post, token: string, userId: string) {
-	const endpoint = apiPath + "/api/notes/create";
-	axios.post(endpoint, {'i': token, text: tweet.text}).then((res) => {
-		console.log(`Posted tweet ${tweet.id}`)
-		tweet.noteId = res.data.createdNote.id;
-		database[userId].posts.push(tweet);
-	}).catch((err) => {
-		console.log(err);
-	})
+async function uploadFiles(medias: string[], token: string){
+	const endpoint = apiPath + "drive/files/create";
+	let uploads: Promise<AxiosResponse<any>>[] = [];
+	for(let media of medias) {
+		console.log(`Uploading ${media}`);
+		let file = await axios.get(media, {responseType: 'arraybuffer'});
+		let formData = new FormData();
+		// console.log(file.data.toString('ASCII'));
+		formData.append('i', token);
+		formData.append('file', file.data, {filename: media.split('/').pop()});
+		formData.append('force', 'true');
+		uploads.push(axios.post(endpoint, formData, { headers: { 'Content-Type': 'multipart/form-data' } }));
+	}
+	let results = await Promise.all(uploads);
+	let ids = results.map((x) => x.data.id);
+	console.log('uploaded files', ids);
+	return ids;
+}
+
+async function postNote(tweet: Post, token: string) {
+	const endpoint = apiPath + "notes/create";
+	const uploadedFiles = await uploadFiles(tweet.medias, token);
+	return axios.post(endpoint, {'i': token, text: tweet.text, mediaIds: uploadedFiles})
 }
 
 function nextUserId() {
@@ -40,11 +56,10 @@ function nextUserId() {
 	if (i >= keys.length) i = 0;
 	return keys[i++];
 }
-function deleteNote(note: Post, token: string, userId: string) {
-	const endpoint = apiPath + "/api/notes/delete";
+function deleteNote(note: Post, token: string) {
+	const endpoint = apiPath + "notes/delete";
 	axios.post(endpoint, {'i': token, noteId: note.noteId}).then((res) => {
 		console.log(`Deleted note ${note.id}`)
-		console.log(res.data);
 	}).catch((err) => {
 		console.log(err);
 	})
@@ -56,12 +71,18 @@ function parsetweets(tweets: any) {
 		let content = tweet.content;
 		if (!tweet.entryId.startsWith('tweet')) continue;
 		if (content.itemContent == undefined) continue;
-		if (content.itemContent.tweet_results.result.legacy.is_quote_status == true) continue;
-		if (content.itemContent.tweet_results.result.legacy.full_text.startsWith('RT')) continue;
-		console.log(content.itemContent.tweet_results.result.legacy.full_text);
+		const legacy = content.itemContent.tweet_results.result.legacy
+		if (legacy.is_quote_status == true) continue;
+		if (legacy.full_text.startsWith('RT')) continue;
+		console.log(legacy.full_text);
+		let medias : string[] = [];
+		for(let media of legacy.extended_entities.media) {
+			medias.push(media.media_url_https);
+		}
 		let res = {
-			text : content.itemContent.tweet_results.result.legacy.full_text,
-			id: content.itemContent.tweet_results.result.legacy.id_str
+			text : legacy.full_text.replace(/https:\/\/t.co\/\w+/, ''),
+			id: legacy.id_str,
+			medias: medias
 		}
 		filtered.push(res);
 	}
@@ -131,10 +152,14 @@ function extractUserId(url : string) {
 		let toadd = todo.filter(x => databasePosts.find((y) => x.id == y.id) == undefined);
 		database[userId].posts = databasePosts.filter(x => todelete.find((y) => x.id == y.id) == undefined);
 		for(let tweet of toadd) {
-			postNote(tweet, database[userId].apiKey, userId);
+			postNote(tweet, database[userId].apiKey).then((res) => {
+				console.log(`Posted tweet ${tweet.id}`)
+				tweet.noteId = res.data.createdNote.id;
+				database[userId].posts.push(tweet)
+			}).catch(e => console.log(e));
 		}
 		for(let tweet of todelete) {
-			deleteNote(tweet, database[userId].apiKey, userId);
+			deleteNote(tweet, database[userId].apiKey);
 		}
 		fs.writeFileSync("./data.json", JSON.stringify(database,null,2))
 	}
