@@ -1,0 +1,32 @@
+[
+  {
+    "name": "auth_token",
+    "value": "YOUR_AUTH_TOKEN",
+    "domain": ".twitter.com",
+    "path": "/",
+    "expires": 1725901723.999725,
+    "size": 50,
+    "httpOnly": true,
+    "secure": true,
+    "session": false,
+    "sameSite": "None",
+    "sameParty": false,
+    "sourceScheme": "Secure",
+    "sourcePort": 443
+  },
+  {
+    "name": "ct0",
+    "value": "YOUR_CT0",
+    "domain": ".twitter.com",
+    "path": "/",
+    "expires": 1725901724.177352,
+    "size": 163,
+    "httpOnly": false,
+    "secure": true,
+    "session": false,
+    "sameSite": "Lax",
+    "sameParty": false,
+    "sourceScheme": "Secure",
+    "sourcePort": 443
+  }
+]
