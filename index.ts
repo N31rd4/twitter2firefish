@@ -12,7 +12,7 @@ interface Post {
 interface User {
 	posts: Post[],
 	apiKey: string,
-	visibility: string
+	visibility?: string
 }
 interface Database {
 	[userId: string]: User
@@ -49,7 +49,11 @@ async function uploadFiles(medias: string[], token: string){
 async function postNote(tweet: Post, user: User) {
 	const endpoint = apiPath + "notes/create";
 	const uploadedFiles = await uploadFiles(tweet.medias, user.apiKey);
-	return axios.post(endpoint, {'i': user.apiKey, visibility: user.visibility, text: tweet.text, mediaIds: uploadedFiles})
+	return axios.post(endpoint, {
+		'i': user.apiKey,
+		visibility: user.visibility || "public",
+		text: tweet.text,
+		mediaIds: uploadedFiles})
 }
 
 function nextUserId() {
