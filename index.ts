@@ -11,7 +11,8 @@ interface Post {
 }
 interface User {
 	posts: Post[],
-	apiKey: string
+	apiKey: string,
+	visibility: string
 }
 interface Database {
 	[userId: string]: User
@@ -45,10 +46,10 @@ async function uploadFiles(medias: string[], token: string){
 	return ids;
 }
 
-async function postNote(tweet: Post, token: string) {
+async function postNote(tweet: Post, user: User) {
 	const endpoint = apiPath + "notes/create";
-	const uploadedFiles = await uploadFiles(tweet.medias, token);
-	return axios.post(endpoint, {'i': token, text: tweet.text, mediaIds: uploadedFiles})
+	const uploadedFiles = await uploadFiles(tweet.medias, user.apiKey);
+	return axios.post(endpoint, {'i': user.apiKey, visibility: user.visibility, text: tweet.text, mediaIds: uploadedFiles})
 }
 
 function nextUserId() {
@@ -155,7 +156,7 @@ function extractUserId(url : string) {
 		let toadd = todo.filter(x => databasePosts.find((y) => x.id == y.id) == undefined);
 		database[userId].posts = databasePosts.filter(x => todelete.find((y) => x.id == y.id) == undefined);
 		for(let tweet of toadd) {
-			postNote(tweet, database[userId].apiKey).then((res) => {
+			postNote(tweet, database[userId]).then((res) => {
 				console.log(`Posted tweet ${tweet.id}`)
 				tweet.noteId = res.data.createdNote.id;
 				database[userId].posts.push(tweet)
