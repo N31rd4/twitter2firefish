@@ -6,5 +6,5 @@ services:
     build: .
     restart: unless-stopped
     volumes:
-      - ./posted.json:/usr/src/app/posted.json
+      - ./data.json:/usr/src/app/data.json
       - ./cookies.json:/usr/src/app/cookies.json
