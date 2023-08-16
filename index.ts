@@ -77,6 +77,7 @@ function parsetweets(tweets: any) {
 		if (!tweet.entryId.startsWith('tweet')) continue;
 		if (content.itemContent == undefined) continue;
 		const legacy = content.itemContent.tweet_results.result.legacy
+		if (legacy == undefined) continue
 		if (legacy.is_quote_status == true) continue;
 		if (legacy.full_text.startsWith('RT')) continue;
 		console.log(legacy.full_text);
