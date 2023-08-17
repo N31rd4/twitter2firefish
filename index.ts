@@ -50,10 +50,11 @@ async function uploadFiles(medias: string[], token: string){
 async function postNote(tweet: Post, user: User) {
 	const endpoint = apiPath + "notes/create";
 	const uploadedFiles = await uploadFiles(tweet.medias, user.apiKey);
-	let replyNoteId = undefined;
+	let replyNoteId : string | undefined = undefined;
 	if (tweet.replyTo){
 		let replyedNote = user.posts.find((note) => tweet.replyTo == note.id)
-		replyNoteId = replyedNote.noteId
+		if (replyedNote)
+			replyNoteId = replyedNote.noteId
 	}
 	return axios.post(endpoint, {
 		'i': user.apiKey,
