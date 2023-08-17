@@ -7,7 +7,8 @@ interface Post {
 	text: string,
 	id: string,
 	medias: string[],
-	noteId?: string
+	noteId?: string,
+	replyTo?:string
 }
 interface User {
 	posts: Post[],
@@ -49,11 +50,18 @@ async function uploadFiles(medias: string[], token: string){
 async function postNote(tweet: Post, user: User) {
 	const endpoint = apiPath + "notes/create";
 	const uploadedFiles = await uploadFiles(tweet.medias, user.apiKey);
+	let replyNoteId = undefined;
+	if (tweet.replyTo){
+		let replyedNote = user.posts.find((note) => tweet.replyTo == note.id)
+		replyNoteId = replyedNote.noteId
+	}
 	return axios.post(endpoint, {
 		'i': user.apiKey,
 		visibility: user.visibility || "public",
 		text: tweet.text,
-		mediaIds: uploadedFiles})
+		mediaIds: uploadedFiles,
+		replyId: replyNoteId
+	})
 }
 
 function nextUserId() {
@@ -74,7 +82,7 @@ function parsetweets(tweets: any) {
 	let filtered : Post[] = [];
 	for(let tweet of tweets) {
 		let content = tweet.content;
-		if (!tweet.entryId.startsWith('tweet')) continue;
+		if (!(tweet.entryId.startsWith('tweet') || tweet.entryId.startsWith('profile-conversation'))) continue;
 		if (content.itemContent == undefined) continue;
 		const legacy = content.itemContent.tweet_results.result.legacy
 		if (legacy == undefined) continue
@@ -91,7 +99,8 @@ function parsetweets(tweets: any) {
 		let res = {
 			text : legacy.full_text.replace(/https:\/\/t.co\/\w+/, ''),
 			id: legacy.id_str,
-			medias: medias
+			medias: medias,
+			replyTo: legacy.in_reply_to_status_id_str
 		}
 		filtered.push(res);
 	}
